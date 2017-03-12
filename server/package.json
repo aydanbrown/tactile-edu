@@ -1,0 +1,16 @@
+{
+  "name": "tactile-edu",
+  "version": "0.0.1",
+  "description": "Tactile Education",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aydanbrown/tactile-edu.git"
+  },
+  "author": "Aydan Brown",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aydanbrown/tactile-edu/issues"
+  },
+  "homepage": "https://github.com/aydanbrown/tactile-edu#readme"
+}
