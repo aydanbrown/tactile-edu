@@ -4,3 +4,8 @@ node_modules
 # Credentials
 config.json	
 credentials.js
+
+# Audio
+audio/object/*
+audio/menu-item/*
+audio/voice/*
