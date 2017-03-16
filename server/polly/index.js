@@ -23,6 +23,7 @@ module.exports = {
 	synthesize: synthesize
 }
 
+/*
 sql('SELECT id, intro FROM Objects', function(err, result) {
 	if(err) {
 		console.log('Failed to get object when trying to update audio files');
@@ -72,6 +73,7 @@ sql('SELECT id, answer FROM Answers', function(err, result) {
 		}
 	});
 });
+*/
 
 /*
 synthesize('Hello Tactile Astronomy, I look forward to working with you.', function(err, data) {

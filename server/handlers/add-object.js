@@ -2,61 +2,58 @@ const sql = require('../sql');
 const polly = require('../polly');
 const fs = require('fs');
 
+const objectAudioDir = rootDir + '/audio/object/';
+const menuItemAudioDir = rootDir + '/audio/menu-item/';
+
 module.exports = function(req, res, error) {
 	var validationErrors = validate(req.body);
+
 	if(validationErrors.length > 0) {
 		validationErrors = validationErrors.join(', ');
-		console.log('Request validation errors: ' + req.id + ' - ' + validationErrors);
-		res.writeHead(400);
-		res.end(validationErrors);
+		error('Request validation error(s): ' + req.id + ' - ' + validationErrors);
 		return;
 	}
 
-	sql('INSERT INTO Objects (name, intro) VALUES (?, ?)', [req.body.name, req.body.intro], function(err, result) {
+	sql('INSERT INTO Objects (name, content) VALUES (?, ?)', [req.body.name, req.body.content], function(err, result) {
 		if(err) return error(err);
+
 		var objectId = result.insertId;
-		var introFile = dirRoot + '/audio/intros/' + objectId + '.ogg';
-		downloadAudio(introFile, req.body.intro, function(err) {
+
+		var remaining = 0;
+		var failCount = 0;
+		
+		function done(err) {
+			remaining--;
 			if(err) {
-				sql('DELETE FROM Objects WHERE id=? LIMIT 1', [objectId]);
-				fs.unlink(introFile);
-				return error(err);
+				console.error(err);
+				failCount++;
 			}
-			var remaining = 0;
-			var failCount = 0;
-			var answerIds = [];
-
-			function answerDone(id, err) {
-				remaining--;
-				if(id) answerIds.push(id);
-				if(err) {
-					console.log('Failed to download answer');
-					console.error(err);
-					failCount++;
+			if(remaining == 0) {
+				if(failCount > 0) {
+					return error('Failed to add object, with ' + failCount + ' errors');
 				}
-				if(remaining == 0) {
-					if(failCount > 0) {
-						answerIds.forEach(function(id) {
-							sql('DELETE FROM Answers WHERE id=? LIMIT 1', [id]);
-							fs.unlink(dirRoot + '/audio/answers/' + id + '.ogg');
-						});
-						return error('Failed to download ' + failCount + ' answer(s)');
-					}
-					res.writeHead(200, { 'Content-Type': 'application/json' });
-					res.end(JSON.stringify({ id: objectId }));
-				}
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify({ id: objectId }));
 			}
+		}
 
-			req.body.answers.forEach(function(answer) {
-				remaining++;
-				sql('INSERT INTO Answers (objectRef, questionRef, answer) VALUES (?, ?, ?)', [objectId, answer.id, answer.answer], function(err, result) {
-					if(err) return answerDone(null, err);
-					var answerId = result.insertId;
-					var file = dirRoot + '/audio/answers/' + answerId + '.ogg';
-					downloadAudio(file, answer.answer, function(err) {
-						answerDone(answerId, err);
-					});
-				});
+		remaining += 2;
+		downloadAudio(objectAudioDir + objectId + '-name.ogg', req.body.name, done);
+		downloadAudio(objectAudioDir + objectId + '-content.ogg', req.body.content, done);
+
+		req.body.menu.forEach(function(item) {
+			remaining++;
+
+			sql('INSERT INTO MenuItems (objectRef, name, content) VALUES (?, ?, ?)', [objectId, item.name, item.content], function(err, result) {
+				if(err) return done(err);
+
+				var itemId = result.insertId;
+
+				remaining += 2;
+				done();
+
+				downloadAudio(menuItemAudioDir + itemId + '-name.ogg', item.name, done);
+				downloadAudio(menuItemAudioDir + itemId + '-content.ogg', item.content, done);
 			});
 		});
 	});
@@ -64,18 +61,23 @@ module.exports = function(req, res, error) {
 
 function validate(body) {
 	var errors = [];
+
 	if(!body.name) errors.push('missing name');
-	if(!body.intro) errors.push('missing intro');
-	if(!body.answers) errors.push('missing answers');
-	if(!Array.isArray(body.answers)) errors.push('answers must be an array');
+	if(!body.content) errors.push('missing content');
+	if(body.menu) {
+		body.menu.forEach(function(item, i) {
+			if(!item.name) errors.push('item ' + i + ' missing name');
+			if(!item.content) errors.push('item ' + i + ' missing content');
+		});
+	}
 	return errors;
 }
 
-function downloadAudio(file, text, callback) {
-	polly.synthesize(text, function(err, data) {
+function downloadAudio(file, content, callback) {
+	polly.synthesize(content, function(err, data) {
 		if(err) {
-			console.log('Failed to get audio via Polly');
-			callback(err);
+			console.error('Failed to get audio via Polly');
+			return callback(err);
 		}
 		fs.writeFile(file, data.AudioStream, callback);
 	});

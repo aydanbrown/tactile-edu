@@ -1,29 +1,36 @@
 const http = require('http');
 const PORT = 80;
 
-global.dirRoot = __dirname;
+global.rootDir = __dirname;
 
 var requestCounter = 1;
 
 var handlers = {
 	'/object': {
-		PUT: require('./handlers/add-object'),
-		POST: require('./handlers/link-object'),
-		GET: require('./handlers/list-objects')
+		GET: require('./handlers/list-objects'),
+		PUT: require('./handlers/add-object')
 	},
-	'/object/answer/{id}': { GET: require('./handlers/list-object-answers') },
-	'/object/{id}': { GET: require('./handlers/get-object') },
-	'/answer': { GET: require('./handlers/list-answers') },
-	'/answer/{id}': { GET: require('./handlers/get-answer') },
-	'/question': {
-		GET: require('./handlers/list-questions'),
-		POST: require('./handlers/add-question')
+	'/object/{id}': {
+		GET: require('./handlers/get-object')
 	},
-	'/question/{id}': { GET: require('./handlers/get-question') },
-	'/audio/intro/{id}': { GET: require('./handlers/get-intro-audio') },
-	'/audio/answer/{id}': { GET: require('./handlers/get-answer-audio') },
-	'/record': { POST: require('./handlers/add-record') }
-}
+	'/voice': {
+		GET: require('./handlers/list-voices'),
+		PUT: require('./handlers/add-voice')
+	},
+	'/voice/{id}': {
+		GET: require('./handlers/get-voice')
+	},
+	'/link': {
+		GET: require('./handlers/list-links'),
+		PUT: require('./handlers/add-link')
+	},
+	'/link/{ntag}': {
+		GET: require('./handlers/get-link')
+	},
+	'/audio/{type}/{file}': {
+		GET: require('./handlers/get-audio')
+	}
+};
 
 function handle(url, method, query, headers, body, res) {
 	var path = url.split('/');
@@ -77,6 +84,7 @@ function formatQuery(queryString) {
 }
 
 var server = http.createServer(function(req, res) {
+	console.log('Domain: ' + req.domain);
 	var url = req.url.split('?');
 	var query = url.length > 1 ? formatQuery(url[1]) : {};
 	var body = [];

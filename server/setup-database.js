@@ -2,31 +2,25 @@ const tables = {
 	Objects: [
  		'id INT NOT NULL PRIMARY KEY AUTO_INCREMENT',
 		'name TEXT',
-		'intro TEXT',
+		'content TEXT',
  		'created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
 	],  
-	ObjectLinks: [
+	Links: [
  		'id INT NOT NULL PRIMARY KEY AUTO_INCREMENT',
 		'objectRef INT NOT NULL',
-		'rfRef INT NOT NULL',
+		'ntag INT NOT NULL',
 		'created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
 	],  
-	Questions: [
-		'id INT NOT NULL PRIMARY KEY AUTO_INCREMENT',
-		'question TEXT NOT NULL',
-		'created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
-	],
-	Answers: [
+	MenuItems: [
 		'id INT NOT NULL PRIMARY KEY AUTO_INCREMENT',
 		'objectRef INT NOT NULL',
-		'questionRef INT NOT NULL',
-		'answer TEXT NOT NULL',
+		'name TEXT',
+		'content TEXT',
 		'created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
 	],
-	Records: [
+	Voices: [
 		'id INT NOT NULL PRIMARY KEY AUTO_INCREMENT',
-		'objectRef INT NOT NULL',
-		'questionRef INT NOT NULL',
+		'content TEXT',
 		'created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
 	]
 }

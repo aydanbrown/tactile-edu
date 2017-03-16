@@ -1,289 +1,252 @@
-# tactile-edu
+# tactileedu
 
-The Tactile Astronomy prototype.
+The tactileedu server repository for the Tactile Astronomy project.
 
-## Database
+## SQL Database Tables
 
-Tables:
-* Objects
-* ObjectLinks
-* Questions
-* Answers
-* Records
+Note - These are defined in the `server/setup-database.js` script for convenience of creating the tables.
 
-#### Objects
-
-Each object (moon, crater, e.g.) will have a row with a name and an introduction clip (played when scanned).
+### Objects
 
 ```
-id INT
+id INT NOT NULL PRIMARY KEY AUTO_INCREMENT
 name TEXT
-intro TEXT
-created DATETIME
+content TEXT
+created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ```
 
-#### ObjectLinks
-
-RFIDs will be linked to objects so we can have multiple instances of a single object.
+### ObjectLinks
 
 ```
-id INT
-objectRef INT
-rfRef INT
-created DATETIME
+id INT NOT NULL PRIMARY KEY AUTO_INCREMENT
+objectRef INT NOT NULL
+ntag INT NOT NULL
+created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ```
 
-#### Questions
-
-Questions will be predefined so the voice recognition software will know what to interpret.
+### MenuItems
 
 ```
-id INT
-question TEXT
-created DATETIME
+id INT NOT NULL PRIMARY KEY AUTO_INCREMENT
+objectRef INT NOT NULL
+name TEXT
+content TEXT
+created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ```
 
-#### Answers
-
-There will be several answers linked to an object, all with a unique question.
+### Voices
 
 ```
-id INT
-objectRef
-questionRef
-answer TEXT
-created DATETIME
+id INT NOT NULL PRIMARY KEY AUTO_INCREMENT
+name TEXT
+content TEXT
+created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ```
 
-#### Records
+## API
 
-A record will be kept when a question is asked so we can later analyse what worked and what didn't.
-
-```
-id `INT
-objectRef INT
-questionRef INT
-created DATETIME
-```
-
-## Server
-
-The server will be running on a Raspberry Pi and will act as a hub containing the database and serving out files.
-
-### API endpoints
+### Endpoints
 
 ```
-PUT /object
 GET /object
+PUT /object
 GET /object/{id}
-POST /object
-GET /answer
-GET /answer/{id}
-GET /question
-GET /question/{id}
-POST /question
-GET /object/answer/{id}
-POST /record
-GET /audio/intro/{id}
-GET /audio/answer/{id}
+GET /link
+PUT /link
+GET /link/{id}
+GET /voice
+PUT /voice
+GET /voice/{id}
+GET /audio/{type}/{file}
 ```
 
-### Add Object
+### GET /object
 
-PUT /object
+List objects - returns a list of objects.
 
-Request:
-```json
-{
-	"name": "string",
-	"intro": "string",
-	"answers": [
-		{
-			"id": 123,
-			"answer": "string"
-		}
-	]
-}
-```
+No request parameters.
 
-Response:
-```json
-{
-	id: 123
-}
-```
-
-### List Objects
-
-GET /object
-
-Response:
+Response
 ```json
 [
 	{
 		"id": 123,
 		"name": "string",
-		"intro": "string",
+		"content": "string",
 		"created": "date-string"
 	}
 ]
 ```
 
-### Get Object
+### PUT /object
 
-GET /object/{id}
+Create object - creates a new object with menu items.
 
-Response:
+Request
+```json
+{
+	"name": "string",
+	"content": "string",
+	"menu": [
+		{
+			"name": "string",
+			"content": "string"
+		}
+	]
+}
+```
+
+Response
+```json
+{
+	"id": 123
+}
+```
+
+### GET /object/{id}
+
+Get object - Returns a full object including menu components and audio links.
+
+Request requires and ID in the url.
+
+Response
 ```json
 {
 	"id": 123,
 	"name": "string",
-	"intro": "string",
-	"created": "date-string"
+	"name_audio": "http://host/audio/object/123-name.ogg",
+	"content": "string",
+	"content_audio": "http://host/audio/object/123-content.ogg",
+	"menu": {
+		"A": {
+			"id": 123,
+			"name": "string",
+			"name_audio": "http://host/audio/object/123-name.ogg",
+			"content": "string",
+			"content_audio": "http://host/audio/object/123-content.ogg"
+		},
+		"B": {
+			"id": 124,
+			"name": "string",
+			"name_audio": "http://host/audio/object/124-name.ogg",
+			"content": "string",
+			"content_audio": "http://host/audio/object/124-content.ogg"
+		}
+	}
 }
 ```
 
-### Link RFID to Object
+### GET /link
 
-POST /object
+List links - returns a list of all links.
 
-Request:
+No request parameters.
+
+Response
+```json
+[
+	{
+		"id": 123,
+		"ntag": 123,
+		"objectRef": 123,
+		"created": "date-string"
+	}
+]
+```
+
+### PUT /link
+
+Create link - creates a link for an nfc tag to relate to an object.
+
+Request
 ```json
 {
 	"objectRef": 123,
-	"rfRef": 123
+	"ntag": 123
 }
 ```
 
-Response:
+Response
 ```json
 {
 	"id": 123
 }
 ```
 
-### List Answers
+### GET /link/{ntag}
 
-GET /answer
+Get link - returns a link containing the nfc tag and the object related to it.
 
-Response:
-```json
-[
-	{
-		"id": 123,
-		"objectRef": 123,
-		"questionRef": 123,
-		"answer": "string",
-		"created": "date-string"
-	}
-]
-```
-
-### Get Answer
-
-GET /answer/{id}
-
-Response:
 ```json
 {
 	"id": 123,
+	"ntag": 123,
 	"objectRef": 123,
-	"questionRef": 123,
-	"answer": "string",
 	"created": "date-string"
 }
 ```
 
-### List Questions
+### GET /voice
 
-GET /question
+List voices - returns a list of all voices.
 
-Response:
+No request paramters.
+
+Response
 ```json
 [
 	{
 		"id": 123,
-		"question": "string",
+		"content": "string",
 		"created": "date-string"
 	}
 ]
 ```
 
-### Get Question
+### PUT /voice
 
-GET /question/{id}
+Create voice - creates a piece of audio for easy api access.
 
-Request:
+Request
 ```json
 {
-	"id": 123,
-	"question": "string",
-	"created": "date-string"
+	"content": "string"
 }
 ```
 
-### Add Question
-
-POST /question
-
-Request:
-```json
-{
-	"question": "string"
-}
-```
-
-### List Object Answers
-
-GET /object/answer/{id}
-
-(id = object ID)
-
-Respose:
-```json
-[
-	{
-		"id": 123,
-		"objectRef": 123,
-		"questionRef": 123,
-		"answer": "string",
-		"created": "date-string"
-	}
-]
-```
-
-### Add Record
-
-POST /record
-
-Request:
-```json
-{
-	"objectRef": 123,
-	"questionRef": 123
-}
-```
-
-Response:
+Response
 ```json
 {
 	"id": 123
 }
 ```
 
-### Get Intro Audio Clip
+### GET /voice/{id}
 
-GET /audio/intro/{id}
+Get voice - returns the details of a voice.
 
-(id = object ID)
+Request requires the id parameter.
 
-Responds with an ogg file.
+Response
+```json
+{
+	"id": 123,
+	"content": "string",
+	"created": "date-string"
+}
+```
 
-### Get Answer Audio Clip
+### GET /audio/{type}/{file}
 
-GET /audio/answer/{id}
+Get file - returns an ogg audio file.
 
-(id = answer ID)
+Request requires a type and a file, currently there are 3 types.
+```
+/audio/object/1-name.ogg
+/audio/menu-item/1-content.ogg
+/audio/voice/1-content.ogg
+```
 
-Responds with an ogg file.
+Response is an ogg file.
+
 
